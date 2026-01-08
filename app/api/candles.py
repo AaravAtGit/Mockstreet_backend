@@ -1,8 +1,20 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from typing import List
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
 from app.services.market_engine import market_service
+from app.db.session import get_db
+from app.models.candle import Candle
 
 router = APIRouter()
+
+
+@router.get("/tickers", response_model=List[str])
+def get_available_tickers(db: Session = Depends(get_db)):
+    """List all available trading pairs."""
+    tickers = db.query(Candle.symbol).distinct().all()
+    # tickers is a list of tuples like [('AAPL',), ('BTC-USD',)]
+    return [t[0] for t in tickers]
 
 
 @router.get("/ws/game/{room_id}")

@@ -8,6 +8,9 @@ from app.models.candle import Candle
 from app.models.room import Room
 from app.models.portfolio import Portfolio
 from app.models.position import Position
+from sqlalchemy import func
+from datetime import timedelta
+import random
 
 # Constants
 DEFAULT_GAME_DURATION = 1800  # 30 minutes default (used if room has no duration set)
@@ -130,12 +133,47 @@ class GameRoom:
             self.started_at = int(room.started_at.timestamp()) if room.started_at else None
             self.game_duration = room.duration_seconds or DEFAULT_GAME_DURATION
             
+            min_max_query = db.query(
+                func.min(Candle.timestamp),
+                func.max(Candle.timestamp)
+            ).filter(Candle.symbol == room.symbol).first()
+            
+            if not min_max_query or not min_max_query[0] or not min_max_query[1]:
+                await self.broadcast({"type": "error", "message": f"No candle data for {room.symbol}"})
+                return
+            
+            min_ts, max_ts = min_max_query
+            
+            # Ensure we have enough data for the game duration
+            latest_possible_start = max_ts - timedelta(seconds=self.game_duration)
+            
+            if latest_possible_start < min_ts:
+                await self.broadcast({
+                    "type": "error", 
+                    "message": f"Insufficient data for {self.game_duration}s game. Available: {max_ts - min_ts}"
+                })
+                return
+                
+            # Pick a random start time
+            # Convert to unix timestamp for random selection
+            min_unix = int(min_ts.timestamp())
+            max_unix = int(latest_possible_start.timestamp())
+            
+            random_start_unix = random.randint(min_unix, max_unix)
+            from datetime import datetime, timezone
+            scenario_start = datetime.fromtimestamp(random_start_unix, tz=timezone.utc).replace(tzinfo=None) # naive if db is naive
+
+            # Fetch relevant candles (preload + game duration)
+            # We fetch a bit more than needed to be safe
+            needed_candles = self.game_duration + PRELOAD_CANDLES
+            
             candles = db.query(Candle).filter(
-                Candle.symbol == room.symbol
-            ).order_by(Candle.timestamp).all()
+                Candle.symbol == room.symbol,
+                Candle.timestamp >= scenario_start
+            ).order_by(Candle.timestamp).limit(needed_candles).all()
             
             if not candles:
-                await self.broadcast({"type": "error", "message": f"No candle data for {room.symbol}"})
+                await self.broadcast({"type": "error", "message": f"Failed to fetch candles starting at {scenario_start}"})
                 return
 
             # 4. Send 50 preload candles immediately (historical data)
