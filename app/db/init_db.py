@@ -5,6 +5,9 @@ from app.db.base import Base # noqa
 from app.db.session import engine # noqa
 from app.models.user import User # noqa
 from app.models.candle import Candle # noqa
+from app.models.room import Room # noqa
+from app.models.portfolio import Portfolio # noqa
+from app.models.position import Position # noqa
 
 def init_db(db: Session):
     # Base.metadata.drop_all(bind=engine) # Use with caution! Clears all data.

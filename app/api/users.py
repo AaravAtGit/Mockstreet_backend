@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
+from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.security import create_access_token, verify_password, get_password_hash, create_email_verification_token, ALGORITHM
 from app.db.session import get_db
@@ -22,8 +23,12 @@ def register_user(
     if db.query(User).filter(User.email == user_in.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
     
+    if db.query(User).filter(User.username == user_in.username).first():
+        raise HTTPException(status_code=400, detail="Username already taken")
+    
     user = User(
-        email=user_in.email, 
+        email=user_in.email,
+        username=user_in.username,
         hashed_password=get_password_hash(user_in.password)
     )
     db.add(user)
@@ -32,6 +37,11 @@ def register_user(
 
     create_email_verification_token(subject=user.email)
     return user
+
+@router.get("/check-username/{username}")
+def check_username(username: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == username).first()
+    return {"exists": user is not None}
 
 @router.post("/login", response_model=Token)
 def login_for_access_token(
@@ -73,4 +83,9 @@ def verify_mail(token: str, db: Session = Depends(get_db)):
     
     return {"message": "Email verified"}
 
- 
+
+@router.get("/me", response_model=UserSchema)
+def get_user(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
