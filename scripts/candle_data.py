@@ -54,7 +54,7 @@ def fetch_data():
                     symbol=symbol,
                     timestamp=ts,
                     open=float(row['Open']),
-                    high=float(row['High']),
+                    high=float(row['High']), 
                     low=float(row['Low']),
                     close=float(row['Close']),
                     volume=float(row['Volume'])
