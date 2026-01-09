@@ -2,7 +2,7 @@ from typing import List, Annotated
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_active_verified_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.room import Room
@@ -16,7 +16,7 @@ router = APIRouter()
 @router.post("/", response_model=RoomResponse)
 def create_room(
     room_in: RoomCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_active_verified_user)],
     db: Session = Depends(get_db)
 ):
     # Validate duration (1 min to 60 min)
@@ -52,7 +52,8 @@ def create_room(
 def list_rooms(
     skip: int = 0, 
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_verified_user)
 ):
     rooms = db.query(Room).options(
         joinedload(Room.player1),
@@ -68,7 +69,7 @@ def list_rooms(
 @router.post("/{room_id}/join", response_model=RoomResponse)
 def join_room(
     room_id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_active_verified_user)],
     db: Session = Depends(get_db),
 ):
     room = db.query(Room).filter(Room.id == room_id).first()

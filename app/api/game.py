@@ -2,7 +2,7 @@ from typing import List, Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_active_verified_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.room import Room
@@ -19,7 +19,7 @@ router = APIRouter()
 @router.get("/portfolio", response_model=PortfolioResponse)
 def get_my_portfolio(
     room_id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_active_verified_user)],
     db: Session = Depends(get_db),
 ):
     portfolio = db.query(Portfolio).filter(
@@ -37,7 +37,7 @@ def get_my_portfolio(
 def place_trade(
     room_id: int,
     trade_in: TradeRequest,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_active_verified_user)],
     db: Session = Depends(get_db),
 ):
     # 1. Get Portfolio
@@ -94,7 +94,7 @@ def place_trade(
 @router.post("/close/{position_id}", response_model=PositionResponse)
 def close_trade(
     position_id: int,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_active_verified_user)],
     db: Session = Depends(get_db),
 ):
     # 1. Get Position (ensure user owns it)

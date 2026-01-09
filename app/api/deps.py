@@ -38,3 +38,12 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+def get_current_active_verified_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if not current_user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    if not current_user.is_verified:
+        raise HTTPException(status_code=403, detail="User not verified")
+    return current_user

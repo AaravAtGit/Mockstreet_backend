@@ -6,9 +6,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_active_verified_user
 from app.core.config import settings
 from app.core.security import create_access_token, verify_password, get_password_hash, create_email_verification_token, ALGORITHM
+from app.core.email import send_verification_email
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.user import Token, UserCreate, User as UserSchema
@@ -20,7 +21,15 @@ def register_user(
     user_in: UserCreate,
     db: Session = Depends(get_db)
 ):
-    if db.query(User).filter(User.email == user_in.email).first():
+    existing_user = db.query(User).filter(User.email == user_in.email).first()
+    if existing_user:
+        if not existing_user.is_verified:
+            verification_token = create_email_verification_token(subject=existing_user.email)
+            send_verification_email(existing_user.email, verification_token)
+            raise HTTPException(
+                status_code=400, 
+                detail="Email already registered but not verified. A new verification email has been sent."
+            )
         raise HTTPException(status_code=400, detail="Email already registered")
     
     if db.query(User).filter(User.username == user_in.username).first():
@@ -35,7 +44,8 @@ def register_user(
     db.commit()
     db.refresh(user)
 
-    create_email_verification_token(subject=user.email)
+    verification_token = create_email_verification_token(subject=user.email)
+    send_verification_email(user.email, verification_token)
     return user
 
 @router.get("/check-username/{username}")
@@ -54,6 +64,14 @@ def login_for_access_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not user.is_verified:
+        verification_token = create_email_verification_token(subject=user.email)
+        send_verification_email(user.email, verification_token)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. A new verification email has been sent.",
         )
     
     access_token = create_access_token(
@@ -85,7 +103,7 @@ def verify_mail(token: str, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserSchema)
-def get_user(current_user: User = Depends(get_current_user)):
+def get_user(current_user: User = Depends(get_current_active_verified_user)):
     return current_user
 
 

@@ -142,6 +142,14 @@ async def chat_websocket(websocket: WebSocket, room_id: int):
                 await websocket.close(code=4003)
                 return
             
+            if not user.is_verified:
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Email not verified"
+                })
+                await websocket.close(code=4003)
+                return
+
             # Check user is in this room
             portfolio = db.query(Portfolio).filter(
                 Portfolio.user_id == user.id,
