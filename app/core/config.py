@@ -4,13 +4,13 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Mockstreet"
     API_V1_STR: str = "/api/v1"
 
-    SECRET_KEY: str = "85XqFGVUJNLfaaLdCPYOtpFN7aaZT53x4rVJJe/ymjw="
+    SECRET_KEY: str = "F26DrhxPHtZlsctPOEjbzqltIIq6ZnNUejQaKNyKMrA="
     ALGORITHM: str = "HS256"  # JWT signing algorithm
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
 
     DATABASE_URL: str = "postgresql+psycopg2://postgres:StrongPassword123@localhost/mockstreet"
 
-    EMAIL_SECRET_KEY: str = "HSj4wwmpWMwfqJynR8T0/3fQBOXg6AgFDlM2jbBTqtI="
+    EMAIL_SECRET_KEY: str = "MHhK1mcS2Zpz3hz/kCUSnogZ6pg+5IwHqQwUBKuGL44="
     VERIFICATION_TOKEN_EXPIRE_HOURS: int = 24
     
     SMTP_TLS: bool = True
