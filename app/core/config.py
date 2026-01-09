@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     SECRET_KEY: str = "F26DrhxPHtZlsctPOEjbzqltIIq6ZnNUejQaKNyKMrA="
     ALGORITHM: str = "HS256"  # JWT signing algorithm
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 262800  # 30 minutes
 
     DATABASE_URL: str = "postgresql+psycopg2://postgres:StrongPassword123@localhost/mockstreet"
 
