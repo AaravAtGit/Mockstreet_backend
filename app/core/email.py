@@ -47,7 +47,7 @@ def send_verification_email(email_to: str, token: str) -> None:
     """
     Sends a verification email with a modern, full-page black & white design.
     """
-    link = f"https://mockstreet.com/verify-mail?token={token}"
+    link = f"https://www.mockstreet.com/verify-mail?token={token}"
     subject = f"Verify your Mockstreet Account"
     
     html_content = f"""
